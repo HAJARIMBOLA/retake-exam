@@ -2,10 +2,12 @@ package com.example.demo.endpoint.rest.controller;
 
 import com.example.demo.model.SubmissionDTO;
 import com.example.demo.service.SubmissionService;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,5 +24,10 @@ public class SubmissionController {
       @RequestParam("file") MultipartFile file, @RequestParam("email") String email) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(submissionService.createSubmission(file, email));
+  }
+
+  @GetMapping("/submissions")
+  public ResponseEntity<List<SubmissionDTO>> listSubmissions() {
+    return ResponseEntity.ok(submissionService.listSubmissions());
   }
 }

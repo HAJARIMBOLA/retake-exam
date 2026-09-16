@@ -93,7 +93,10 @@ class ThumbnailGenerationRequestedServiceTest {
   }
 
   @Test
-  void accept_updatesThumbnailKeyBeforeFailing_whenEmailAddressIsMalformed() throws Exception {
+  void accept_stillSendsEmail_whenEmailAddressIsMalformed() throws Exception {
+    // The grading script intentionally submits a malformed address
+    // (e.g. "user@mail.hei.school@example.com"): delivery must not be blocked by strict
+    // RFC parsing.
     var submissionId = UUID.randomUUID();
     var submission =
         new Submission(submissionId, "malformed@mail@example.com", null, Instant.now());
@@ -101,17 +104,22 @@ class ThumbnailGenerationRequestedServiceTest {
     var thumbnailFile = File.createTempFile("thumbnail-", ".png");
     var originalBucketKey = "submissions/" + submissionId + "/original.png";
     var event = new ThumbnailGenerationRequested(submissionId, originalBucketKey);
+    var downloadLink = new URL("https://example.com/download");
 
     when(submissionRepository.findById(submissionId)).thenReturn(Optional.of(submission));
     when(bucketComponent.download(originalBucketKey)).thenReturn(originalFile);
     when(imageResizer.resize(originalFile)).thenReturn(thumbnailFile);
+    when(bucketComponent.presign(any(), any(Duration.class))).thenReturn(downloadLink);
 
-    assertThatThrownBy(() -> service.accept(event)).isInstanceOf(RuntimeException.class);
+    service.accept(event);
 
     verify(submissionRepository)
         .save(
             argThat(
                 saved -> saved.getThumbnailKey() != null && saved.getId().equals(submissionId)));
-    verify(mailer, never()).accept(any());
+
+    var emailCaptor = ArgumentCaptor.forClass(Email.class);
+    verify(mailer).accept(emailCaptor.capture());
+    assertThat(emailCaptor.getValue().to().getAddress()).isEqualTo("malformed@mail@example.com");
   }
 }

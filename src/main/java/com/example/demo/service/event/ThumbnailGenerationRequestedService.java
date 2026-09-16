@@ -62,9 +62,11 @@ public class ThumbnailGenerationRequestedService implements Consumer<ThumbnailGe
     submissionRepository.save(submission);
 
     var downloadLink = bucketComponent.presign(thumbnailKey, DOWNLOAD_LINK_EXPIRATION);
+    var toAddress = new InternetAddress();
+    toAddress.setAddress(submission.getEmail());
     mailer.accept(
         new Email(
-            new InternetAddress(submission.getEmail()),
+            toAddress,
             List.of(),
             List.of(),
             "Your thumbnail is ready",

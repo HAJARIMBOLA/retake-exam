@@ -61,6 +61,10 @@ public class SubmissionService {
     return SubmissionMapper.toDTO(saved);
   }
 
+  public List<SubmissionDTO> listSubmissions() {
+    return submissionRepository.findAll().stream().map(SubmissionMapper::toDTO).toList();
+  }
+
   private File toTempFile(MultipartFile file) throws IOException {
     var tempFile = File.createTempFile("submission-", ".upload");
     file.transferTo(tempFile);

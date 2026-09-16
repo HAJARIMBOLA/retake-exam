@@ -14,6 +14,7 @@ import com.example.demo.file.bucket.BucketComponent;
 import com.example.demo.file.zip.FileTyper;
 import com.example.demo.repository.SubmissionRepository;
 import java.io.File;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,5 +121,27 @@ class SubmissionServiceTest {
 
     verify(submissionRepository, never()).save(any());
     verify(bucketComponent, never()).upload(any(), any());
+  }
+
+  @Test
+  void listSubmissions_returnsAllSubmissionsMappedToDTO() {
+    var first = new Submission(UUID.randomUUID(), "a@example.com", null, Instant.now());
+    var second =
+        new Submission(
+            UUID.randomUUID(), "b@example.com", "submissions/b/thumbnail.png", Instant.now());
+    when(submissionRepository.findAll()).thenReturn(List.of(first, second));
+
+    var result = submissionService.listSubmissions();
+
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).id()).isEqualTo(first.getId());
+    assertThat(result.get(1).thumbnailKey()).isEqualTo("submissions/b/thumbnail.png");
+  }
+
+  @Test
+  void listSubmissions_returnsEmptyList_whenNoneExist() {
+    when(submissionRepository.findAll()).thenReturn(List.of());
+
+    assertThat(submissionService.listSubmissions()).isEmpty();
   }
 }

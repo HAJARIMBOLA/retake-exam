@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -13,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.demo.model.SubmissionDTO;
 import com.example.demo.service.SubmissionService;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,5 +72,27 @@ class SubmissionControllerTest {
         .perform(multipart("/submissions").file(file).param("email", "user@example.com"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.message").value("Unsupported file type: application/pdf"));
+  }
+
+  @Test
+  void listSubmissions_returns200WithBody_whenSubmissionsExist() throws Exception {
+    var dto = new SubmissionDTO(UUID.randomUUID(), "user@example.com", "key.png", Instant.now());
+    when(submissionService.listSubmissions()).thenReturn(List.of(dto));
+
+    mockMvc
+        .perform(get("/submissions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].id").value(dto.id().toString()))
+        .andExpect(jsonPath("$[0].thumbnailKey").value("key.png"));
+  }
+
+  @Test
+  void listSubmissions_returns200WithEmptyArray_whenNoneExist() throws Exception {
+    when(submissionService.listSubmissions()).thenReturn(List.of());
+
+    mockMvc
+        .perform(get("/submissions"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").isEmpty());
   }
 }
